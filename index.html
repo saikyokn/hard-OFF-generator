@@ -3,39 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyScript External Script Loader</title>
+    <title>HARD-OFF Label Generator</title>
 
-    <!-- PyScriptの読み込み -->
+    <!-- PyScript -->
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
     <style>
-        body { font-family: sans-serif; margin: 30px; line-height: 1.6; }
-        .container { max-width: 600px; border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
-        #status { color: green; font-weight: bold; margin-bottom: 15px; }
-        #output { margin-top: 15px; padding: 10px; background-color: #f0f0f0; border-radius: 4px; }
-        input, button { padding: 8px; margin: 5px 0; font-size: 15px; }
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: #003399;
+            color: #333;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 600px;
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        h2 {
+            text-align: center;
+            color: #003399;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 12px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 4px;
+            font-size: 14px;
+            color: #444;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px 10px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #003399;
+        }
+        button {
+            background-color: #ff6600;
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #e65c00;
+        }
+        #status {
+            color: #003399;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 15px;
+            padding: 8px;
+            background-color: #eef2ff;
+            border-radius: 4px;
+        }
+        #output_container {
+            margin-top: 25px;
+            text-align: center;
+        }
+        #output_image {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            display: none;
+            margin: 0 auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>外部Pythonスクリプト起動デモ</h2>
-        
-        <!-- 読み込み状態表示 -->
-        <div id="status">Pythonスクリプトを読み込み中...</div>
+        <h2>ハードオフ風 値札ジェネレーター</h2>
+        <div id="status">Python環境とリソースを準備中...</div>
 
-        <div>
-            <label for="user_input">文字列を入力:</label><br>
-            <input type="text" id="user_input" value="hello python" style="width: 80%;"><br>
-            <button py-click="run_script">main.py の関数を実行</button>
+        <div class="form-group">
+            <label>ラベル種別</label>
+            <select id="label_type">
+                <option value="junk">ジャンク品 (緑)</option>
+                <option value="reuse">リユース品 (赤 / 保証あり)</option>
+            </select>
         </div>
 
-        <div id="output">ここに結果が表示されるクレメンス</div>
+        <div class="form-group">
+            <label>品名</label>
+            <input type="text" id="item_name" value="ノートPC">
+        </div>
+        <div class="form-group">
+            <label>メーカー名</label>
+            <input type="text" id="maker" value="FUJITSU">
+        </div>
+        <div class="form-group">
+            <label>型番</label>
+            <input type="text" id="model_num" value="FMV AH42/EY">
+        </div>
+        <div class="form-group">
+            <label>動作状態 (ジャンク用)</label>
+            <select id="status_choice">
+                <option value="1">動作未確認</option>
+                <option value="2" selected>電源は入りました</option>
+                <option value="3">動作確認</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>税込価格</label>
+            <input type="text" id="price_tax_in" value="3,300">
+        </div>
+        <div class="form-group">
+            <label>本体価格 (税抜)</label>
+            <input type="text" id="price_tax_ex" value="3,000">
+        </div>
+        <div class="form-group">
+            <label>備考・状態メモ</label>
+            <input type="text" id="notes" value="・HDD欠品 ・ACなし">
+        </div>
+
+        <!-- リユース用データ隠し要素 -->
+        <input type="hidden" id="list_price" value="OPEN">
+        <input type="hidden" id="warranty" value="3ヶ月">
+        <input type="hidden" id="year" value="">
+        <input type="hidden" id="description" value="動作確認済み">
+        <input type="hidden" id="product_code" value="2013440000019187 ( 26)">
+
+        <button py-click="run_generator">値札画像を生成するクレメンス！</button>
+
+        <div id="output_container">
+            <h3 style="color: #003399;">生成結果</h3>
+            <img id="output_image" alt="生成された値札">
+        </div>
     </div>
 
-    <!-- src属性で外部の .py ファイルを指定して起動 -->
-    <script type="py" src="main.py" config='{"packages": []}'></script>
+    <!-- 外部パッケージ(Pillow)と、リポジトリ内の画像・フォントファイルを読み込む設定 -->
+    <script type="py" src="main.py" config='{
+        "packages": ["pillow"],
+        "files": {
+            "./MochiyPopOne-Regular.otf": "./MochiyPopOne-Regular.otf",
+            "./hf-group-logo-78f5ba7420.png": "./hf-group-logo-78f5ba7420.png"
+        }
+    }'></script>
 
 </body>
 </html>
